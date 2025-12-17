@@ -25,45 +25,51 @@ async def upload_file(file: UploadFile = File(...), fileType: str = Form(...)):
 
 @router.post("/mother", response_model=UploadResponse)
 async def upload_mother(file: UploadFile = File(...)):
-    # Check file size (50MB limit)
-    if file.size > 50 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
-    
-    if not file.filename.endswith(('.xlsx', '.xls')):
-        raise HTTPException(status_code=400, detail="File must be Excel")
-    
-    job_id = str(uuid.uuid4())
-    file_path = f"uploads/{job_id}_mother.xlsx"
-    os.makedirs("uploads", exist_ok=True)
-    
-    async with aiofiles.open(file_path, 'wb') as f:
-        content = await file.read()
-        await f.write(content)
-    
-    await upload_repo.create(job_id, {"type": "mother", "file_path": file_path, "status": "uploaded"})
-    
-    return UploadResponse(job_id=job_id, message="Mother file uploaded successfully")
+    try:
+        # Check file size (50MB limit)
+        if file.size > 50 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
+        
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            raise HTTPException(status_code=400, detail="File must be Excel")
+        
+        job_id = str(uuid.uuid4())
+        file_path = f"uploads/{job_id}_mother.xlsx"
+        os.makedirs("uploads", exist_ok=True)
+        
+        async with aiofiles.open(file_path, 'wb') as f:
+            content = await file.read()
+            await f.write(content)
+        
+        await upload_repo.create(job_id, {"type": "mother", "file_path": file_path, "status": "uploaded"})
+        
+        return UploadResponse(job_id=job_id, message="Mother file uploaded successfully")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 @router.post("/loose", response_model=UploadResponse)
 async def upload_loose(file: UploadFile = File(...)):
-    # Check file size (50MB limit)
-    if file.size > 50 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
-    
-    if not file.filename.endswith(('.xlsx', '.xls')):
-        raise HTTPException(status_code=400, detail="File must be Excel")
-    
-    job_id = str(uuid.uuid4())
-    file_path = f"uploads/{job_id}_loose.xlsx"
-    os.makedirs("uploads", exist_ok=True)
-    
-    async with aiofiles.open(file_path, 'wb') as f:
-        content = await file.read()
-        await f.write(content)
-    
-    await upload_repo.create(job_id, {"type": "loose", "file_path": file_path, "status": "uploaded"})
-    
-    return UploadResponse(job_id=job_id, message="Loose file uploaded successfully")
+    try:
+        # Check file size (50MB limit)
+        if file.size > 50 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
+        
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            raise HTTPException(status_code=400, detail="File must be Excel")
+        
+        job_id = str(uuid.uuid4())
+        file_path = f"uploads/{job_id}_loose.xlsx"
+        os.makedirs("uploads", exist_ok=True)
+        
+        async with aiofiles.open(file_path, 'wb') as f:
+            content = await file.read()
+            await f.write(content)
+        
+        await upload_repo.create(job_id, {"type": "loose", "file_path": file_path, "status": "uploaded"})
+        
+        return UploadResponse(job_id=job_id, message="Loose file uploaded successfully")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
     
 @router.get("/status")
 async def get_upload_status():

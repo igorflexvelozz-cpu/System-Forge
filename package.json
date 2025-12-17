@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
+    "dev-full": "concurrently \"npm run dev\" \"cd server && & .venv\\Scripts\\Activate.ps1 && python run.py\"",
     "build": "vite build",
     "start": "vite preview",
     "check": "tsc"
