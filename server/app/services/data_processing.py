@@ -9,8 +9,15 @@ class DataProcessingService:
         self.sla_engine = SLAEngine()
 
     async def process_files(self, mother_path: str, loose_path: str) -> List[Dict[str, Any]]:
-        mother_df = pd.read_excel(mother_path)
-        loose_df = pd.read_excel(loose_path)
+        try:
+            mother_df = pd.read_excel(mother_path, sheet_name=0)
+        except Exception as e:
+            raise ValueError(f"Erro ao ler arquivo mother: {str(e)}")
+        
+        try:
+            loose_df = pd.read_excel(loose_path, sheet_name=0)
+        except Exception as e:
+            raise ValueError(f"Erro ao ler arquivo loose: {str(e)}")
         
         mother_df = self.normalizer.normalize_mother_data(mother_df)
         loose_df = self.normalizer.normalize_loose_data(loose_df)

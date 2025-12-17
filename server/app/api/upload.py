@@ -31,7 +31,7 @@ async def upload_mother(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
         
         if not file.filename.endswith(('.xlsx', '.xls')):
-            raise HTTPException(status_code=400, detail="File must be Excel")
+            raise HTTPException(status_code=400, detail="File must be Excel (.xlsx or .xls)")
         
         job_id = str(uuid.uuid4())
         file_path = f"uploads/{job_id}_mother.xlsx"
@@ -39,16 +39,30 @@ async def upload_mother(file: UploadFile = File(...)):
         
         # Save file in chunks to avoid loading large files into memory
         chunk_size = 1024 * 1024  # 1MB chunks
-        async with aiofiles.open(file_path, 'wb') as f:
+        temp_path = f"uploads/{job_id}_temp.xlsx"
+        async with aiofiles.open(temp_path, 'wb') as f:
             while True:
                 chunk = await file.read(chunk_size)
                 if not chunk:
                     break
                 await f.write(chunk)
         
+        # Validate that it's a valid Excel file
+        try:
+            import pandas as pd
+            pd.read_excel(temp_path, sheet_name=0, nrows=1)  # Try to read first row
+        except Exception as e:
+            os.remove(temp_path)
+            raise HTTPException(status_code=400, detail=f"Arquivo inválido ou corrompido: {str(e)}")
+        
+        # Move to final path
+        os.rename(temp_path, file_path)
+        
         await upload_repo.create(job_id, {"type": "mother", "file_path": file_path, "status": "uploaded"})
         
         return UploadResponse(job_id=job_id, message="Mother file uploaded successfully")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
@@ -60,7 +74,7 @@ async def upload_loose(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
         
         if not file.filename.endswith(('.xlsx', '.xls')):
-            raise HTTPException(status_code=400, detail="File must be Excel")
+            raise HTTPException(status_code=400, detail="File must be Excel (.xlsx or .xls)")
         
         job_id = str(uuid.uuid4())
         file_path = f"uploads/{job_id}_loose.xlsx"
@@ -68,16 +82,30 @@ async def upload_loose(file: UploadFile = File(...)):
         
         # Save file in chunks to avoid loading large files into memory
         chunk_size = 1024 * 1024  # 1MB chunks
-        async with aiofiles.open(file_path, 'wb') as f:
+        temp_path = f"uploads/{job_id}_temp.xlsx"
+        async with aiofiles.open(temp_path, 'wb') as f:
             while True:
                 chunk = await file.read(chunk_size)
                 if not chunk:
                     break
                 await f.write(chunk)
         
+        # Validate that it's a valid Excel file
+        try:
+            import pandas as pd
+            pd.read_excel(temp_path, sheet_name=0, nrows=1)  # Try to read first row
+        except Exception as e:
+            os.remove(temp_path)
+            raise HTTPException(status_code=400, detail=f"Arquivo inválido ou corrompido: {str(e)}")
+        
+        # Move to final path
+        os.rename(temp_path, file_path)
+        
         await upload_repo.create(job_id, {"type": "loose", "file_path": file_path, "status": "uploaded"})
         
         return UploadResponse(job_id=job_id, message="Loose file uploaded successfully")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
     
