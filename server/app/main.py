@@ -18,3 +18,22 @@ app.include_router(router)
 @app.get("/")
 async def root():
     return {"message": "Flex Velozz | ATLAS Backend"}
+
+@app.get("/system/status")
+async def get_system_status():
+    from .repositories import ProcessRepository
+    process_repo = ProcessRepository()
+    processes = await process_repo.list_all()
+    if processes:
+        latest = processes[-1]
+        return {
+            "status": latest.get("status", "idle"),
+            "lastUpdate": latest.get("lastUpdated"),
+            "message": latest.get("message")
+        }
+    else:
+        return {
+            "status": "idle",
+            "lastUpdate": None,
+            "message": "Sistema aguardando dados"
+        }
