@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, BackgroundTasks
 from ..repositories import UploadRepository
 from ..models import UploadResponse
 import uuid
@@ -13,33 +13,42 @@ upload_repo = UploadRepository()
 @router.post("/", response_model=UploadResponse)
 async def upload_file(file: UploadFile = File(...), fileType: str = Form(...)):
     # Check file size (100MB limit)
-    if file.size > 100 * 1024 * 1024:
+    if file.size and file.size > 100 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
     
     if fileType == "logmanager":
-        return await upload_mother(file)
+        return await upload_mother_logic(file)
     elif fileType == "gestora":
-        return await upload_loose(file)
+        return await upload_loose_logic(file)
     else:
         raise HTTPException(status_code=400, detail="Invalid fileType")
 
 @router.post("/mother", response_model=UploadResponse)
 async def upload_mother(file: UploadFile = File(...)):
+    # This endpoint is deprecated, use POST / with fileType instead
+    return await upload_mother_logic(file)
+
+@router.post("/loose", response_model=UploadResponse)
+async def upload_loose(file: UploadFile = File(...)):
+    # This endpoint is deprecated, use POST / with fileType instead
+    return await upload_loose_logic(file)
+
+async def upload_mother_logic(file: UploadFile):
     try:
         # Check file size (100MB limit)
-        if file.size > 100 * 1024 * 1024:
+        if file.size and file.size > 100 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
         
-        if not file.filename.endswith(('.xlsx', '.xls')):
-            raise HTTPException(status_code=400, detail="File must be Excel (.xlsx or .xls)")
+        if not file.filename or not file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
+            raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
         
         job_id = str(uuid.uuid4())
-        file_path = f"uploads/{job_id}_mother.xlsx"
+        file_path = f"uploads/{job_id}_mother{os.path.splitext(file.filename)[1]}"
         os.makedirs("uploads", exist_ok=True)
         
         # Save file in chunks to avoid loading large files into memory
         chunk_size = 1024 * 1024  # 1MB chunks
-        temp_path = f"uploads/{job_id}_temp.xlsx"
+        temp_path = f"uploads/{job_id}_temp{os.path.splitext(file.filename)[1]}"
         async with aiofiles.open(temp_path, 'wb') as f:
             while True:
                 chunk = await file.read(chunk_size)
@@ -47,10 +56,13 @@ async def upload_mother(file: UploadFile = File(...)):
                     break
                 await f.write(chunk)
         
-        # Validate that it's a valid Excel file
+        # Validate that it's a valid file
         try:
             import pandas as pd
-            pd.read_excel(temp_path, sheet_name=0, nrows=1)  # Try to read first row
+            if file.filename.lower().endswith('.csv'):
+                pd.read_csv(temp_path, nrows=1)  # Try to read first row
+            else:
+                pd.read_excel(temp_path, sheet_name=0, nrows=1)  # Try to read first row
         except Exception as e:
             os.remove(temp_path)
             raise HTTPException(status_code=400, detail=f"Arquivo inválido ou corrompido: {str(e)}")
@@ -58,7 +70,7 @@ async def upload_mother(file: UploadFile = File(...)):
         # Move to final path
         os.rename(temp_path, file_path)
         
-        await upload_repo.create(job_id, {"type": "mother", "file_path": file_path, "status": "uploaded"})
+        await upload_repo.create(job_id, {"type": "mother", "file_path": file_path, "status": "uploaded", "uploadedAt": datetime.utcnow().isoformat()})
         
         return UploadResponse(job_id=job_id, message="Mother file uploaded successfully")
     except HTTPException:
@@ -66,23 +78,22 @@ async def upload_mother(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
-@router.post("/loose", response_model=UploadResponse)
-async def upload_loose(file: UploadFile = File(...)):
+async def upload_loose_logic(file: UploadFile):
     try:
         # Check file size (100MB limit)
-        if file.size > 100 * 1024 * 1024:
+        if file.size and file.size > 100 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
         
-        if not file.filename.endswith(('.xlsx', '.xls')):
-            raise HTTPException(status_code=400, detail="File must be Excel (.xlsx or .xls)")
+        if not file.filename or not file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
+            raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
         
         job_id = str(uuid.uuid4())
-        file_path = f"uploads/{job_id}_loose.xlsx"
+        file_path = f"uploads/{job_id}_loose{os.path.splitext(file.filename)[1]}"
         os.makedirs("uploads", exist_ok=True)
         
         # Save file in chunks to avoid loading large files into memory
         chunk_size = 1024 * 1024  # 1MB chunks
-        temp_path = f"uploads/{job_id}_temp.xlsx"
+        temp_path = f"uploads/{job_id}_temp{os.path.splitext(file.filename)[1]}"
         async with aiofiles.open(temp_path, 'wb') as f:
             while True:
                 chunk = await file.read(chunk_size)
@@ -90,10 +101,13 @@ async def upload_loose(file: UploadFile = File(...)):
                     break
                 await f.write(chunk)
         
-        # Validate that it's a valid Excel file
+        # Validate that it's a valid file
         try:
             import pandas as pd
-            pd.read_excel(temp_path, sheet_name=0, nrows=1)  # Try to read first row
+            if file.filename.lower().endswith('.csv'):
+                pd.read_csv(temp_path, nrows=1)  # Try to read first row
+            else:
+                pd.read_excel(temp_path, sheet_name=0, nrows=1)  # Try to read first row
         except Exception as e:
             os.remove(temp_path)
             raise HTTPException(status_code=400, detail=f"Arquivo inválido ou corrompido: {str(e)}")
@@ -101,7 +115,7 @@ async def upload_loose(file: UploadFile = File(...)):
         # Move to final path
         os.rename(temp_path, file_path)
         
-        await upload_repo.create(job_id, {"type": "loose", "file_path": file_path, "status": "uploaded"})
+        await upload_repo.create(job_id, {"type": "loose", "file_path": file_path, "status": "uploaded", "uploadedAt": datetime.utcnow().isoformat()})
         
         return UploadResponse(job_id=job_id, message="Loose file uploaded successfully")
     except HTTPException:
@@ -125,9 +139,33 @@ async def get_upload_status():
     processes = await process_repo.list_all()
     processing = processes[-1] if processes else {"status": "idle", "lastUpdated": datetime.utcnow().isoformat()}
     
+    # Ensure processing has all required fields
+    if processing:
+        processing.setdefault("lastUpdated", datetime.utcnow().isoformat())
+        processing.setdefault("status", "idle")
+        processing.setdefault("currentStep", "")
+        processing.setdefault("progress", "0")
+        processing.setdefault("message", "")
+    
+    def format_upload(upload, file_type):
+        if not upload:
+            return None
+        return {
+            "id": upload["id"],
+            "filename": os.path.basename(upload["file_path"]),
+            "fileType": file_type,
+            "status": upload.get("status", "pending"),
+            "uploadedAt": upload.get("uploadedAt", datetime.utcnow().isoformat()),
+            "totalRows": upload.get("totalRows"),
+            "validRows": upload.get("validRows"),
+            "invalidRows": upload.get("invalidRows"),
+            "errors": upload.get("errors", []),
+            "columnValidation": upload.get("columnValidation")
+        }
+    
     return {
-        "logmanager": mother,
-        "gestora": loose,
+        "logmanager": format_upload(mother, "logmanager"),
+        "gestora": format_upload(loose, "gestora"),
         "processing": processing
     }
 
@@ -154,9 +192,10 @@ async def delete_upload(fileType: str):
     return {"message": "File deleted successfully"}
 
 @router.post("/process")
-async def start_processing():
+async def start_processing(background_tasks: BackgroundTasks):
     from ..repositories import ProcessRepository
     from ..models import ProcessStartRequest
+    from .process import process_data
     process_repo = ProcessRepository()
     
     # Get latest mother and loose
@@ -168,9 +207,11 @@ async def start_processing():
     mother = mother_uploads[-1]
     loose = loose_uploads[-1]
     
-    # Start process
-    from .process import start_process
-    from fastapi import BackgroundTasks
-    background_tasks = BackgroundTasks()
-    request = ProcessStartRequest(mother_file_id=mother["id"], loose_file_id=loose["id"])
-    return await start_process(request, background_tasks)
+    # Create process entry
+    job_id = str(uuid.uuid4())
+    await process_repo.create(job_id, {"status": "pending", "progress": 0, "mother_id": mother["id"], "loose_id": loose["id"], "lastUpdated": datetime.utcnow().isoformat()})
+    
+    # Start background task
+    background_tasks.add_task(process_data, job_id)
+    
+    return {"job_id": job_id, "status": "pending", "message": "Processing started"}
