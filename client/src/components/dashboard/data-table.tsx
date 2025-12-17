@@ -271,7 +271,7 @@ export function DataTable<T extends Record<string, unknown>>({
                             column.align === "right" && "text-right"
                           )}
                         >
-                          {getValue(row, column) ?? "-"}
+                          {String(getValue(row, column) ?? "-")}
                         </TableCell>
                       ))}
                     </TableRow>

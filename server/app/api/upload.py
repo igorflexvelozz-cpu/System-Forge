@@ -12,9 +12,9 @@ upload_repo = UploadRepository()
 
 @router.post("/", response_model=UploadResponse)
 async def upload_file(file: UploadFile = File(...), fileType: str = Form(...)):
-    # Check file size (50MB limit)
-    if file.size > 50 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
+    # Check file size (100MB limit)
+    if file.size > 100 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
     
     if fileType == "logmanager":
         return await upload_mother(file)
@@ -26,9 +26,9 @@ async def upload_file(file: UploadFile = File(...), fileType: str = Form(...)):
 @router.post("/mother", response_model=UploadResponse)
 async def upload_mother(file: UploadFile = File(...)):
     try:
-        # Check file size (50MB limit)
-        if file.size > 50 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
+        # Check file size (100MB limit)
+        if file.size > 100 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
         
         if not file.filename.endswith(('.xlsx', '.xls')):
             raise HTTPException(status_code=400, detail="File must be Excel")
@@ -37,9 +37,14 @@ async def upload_mother(file: UploadFile = File(...)):
         file_path = f"uploads/{job_id}_mother.xlsx"
         os.makedirs("uploads", exist_ok=True)
         
+        # Save file in chunks to avoid loading large files into memory
+        chunk_size = 1024 * 1024  # 1MB chunks
         async with aiofiles.open(file_path, 'wb') as f:
-            content = await file.read()
-            await f.write(content)
+            while True:
+                chunk = await file.read(chunk_size)
+                if not chunk:
+                    break
+                await f.write(chunk)
         
         await upload_repo.create(job_id, {"type": "mother", "file_path": file_path, "status": "uploaded"})
         
@@ -50,9 +55,9 @@ async def upload_mother(file: UploadFile = File(...)):
 @router.post("/loose", response_model=UploadResponse)
 async def upload_loose(file: UploadFile = File(...)):
     try:
-        # Check file size (50MB limit)
-        if file.size > 50 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
+        # Check file size (100MB limit)
+        if file.size > 100 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
         
         if not file.filename.endswith(('.xlsx', '.xls')):
             raise HTTPException(status_code=400, detail="File must be Excel")
@@ -61,9 +66,14 @@ async def upload_loose(file: UploadFile = File(...)):
         file_path = f"uploads/{job_id}_loose.xlsx"
         os.makedirs("uploads", exist_ok=True)
         
+        # Save file in chunks to avoid loading large files into memory
+        chunk_size = 1024 * 1024  # 1MB chunks
         async with aiofiles.open(file_path, 'wb') as f:
-            content = await file.read()
-            await f.write(content)
+            while True:
+                chunk = await file.read(chunk_size)
+                if not chunk:
+                    break
+                await f.write(chunk)
         
         await upload_repo.create(job_id, {"type": "loose", "file_path": file_path, "status": "uploaded"})
         

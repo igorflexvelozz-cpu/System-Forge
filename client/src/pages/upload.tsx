@@ -58,63 +58,60 @@ export default function UploadPage() {
   const uploadMutation = useMutation({
     mutationFn: async ({
       file,
-      fileType
+      fileType,
+      onProgress
     }: {
       file: File;
       fileType: "logmanager" | "gestora";
+      onProgress: (progress: number) => void;
     }) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("fileType", fileType);
-      
-      const maxRetries = 3;
-      let lastError: Error;
-      
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes timeout
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
         
-        try {
-          const response = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            const errorText = await response.text();
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            onProgress(percentComplete);
+          }
+        });
+        
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              resolve(response);
+            } catch (e) {
+              resolve(xhr.responseText);
+            }
+          } else {
             let errorMessage = "Erro ao fazer upload";
             try {
-              const error = JSON.parse(errorText);
+              const error = JSON.parse(xhr.responseText);
               errorMessage = error.message || errorMessage;
             } catch {
-              errorMessage = errorText || errorMessage;
+              errorMessage = xhr.responseText || errorMessage;
             }
-            throw new Error(errorMessage);
+            reject(new Error(errorMessage));
           }
-          
-          return response.json();
-        } catch (error) {
-          clearTimeout(timeoutId);
-          lastError = error as Error;
-          
-          if (error.name === 'AbortError') {
-            throw new Error('Upload timed out. File too large or network issue.');
-          }
-          
-          // Retry on network errors, but not on server errors (4xx, 5xx handled above)
-          if (attempt < maxRetries && (error.name === 'TypeError' || error.message.includes('fetch'))) {
-            // Wait before retry (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-            continue;
-          }
-          
-          throw error;
-        }
-      }
-      
-      throw lastError!;
+        });
+        
+        xhr.addEventListener('error', () => {
+          reject(new Error('Erro de rede durante o upload'));
+        });
+        
+        xhr.timeout = 600000; // 10 minutes timeout
+        
+        xhr.addEventListener('timeout', () => {
+          reject(new Error('Upload timed out. File too large or network issue.'));
+        });
+        
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("fileType", fileType);
+        
+        xhr.open('POST', '/api/upload');
+        xhr.send(formData);
+      });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/upload/status"] });
@@ -179,17 +176,19 @@ export default function UploadPage() {
     async (file: File, fileType: "logmanager" | "gestora") => {
       const setProgress = fileType === "logmanager" ? setLogmanagerProgress : setGestoraProgress;
       
-      setProgress(10);
-      const interval = setInterval(() => {
-        setProgress((prev) => Math.min(prev + 5, 90));
-      }, 1000);
+      setProgress(0);
       
       try {
-        await uploadMutation.mutateAsync({ file, fileType });
+        await uploadMutation.mutateAsync({ 
+          file, 
+          fileType, 
+          onProgress: (progress: number) => setProgress(progress)
+        });
+      } catch (error) {
+        // Error is handled in mutation
       } finally {
-        clearInterval(interval);
         setProgress(100);
-        setTimeout(() => setProgress(0), 500);
+        setTimeout(() => setProgress(0), 1000);
       }
     },
     [uploadMutation]

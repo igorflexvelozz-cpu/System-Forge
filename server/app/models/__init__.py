@@ -139,3 +139,29 @@ class HistoryEvolutionResponse(BaseModel):
 class HistoryTrendsResponse(BaseModel):
     trend: str  # e.g., "increasing", "decreasing"
     description: str
+
+# Overview models
+class SLAMetrics(BaseModel):
+    totalPackages: int
+    withinSla: int
+    outsideSla: int
+    withinSlaPercentage: float
+    outsideSlaPercentage: float
+    totalDelays: int
+    totalSellers: int
+    totalZones: int
+
+class BarChartData(BaseModel):
+    name: str
+    value: float
+
+class RankingEntry(BaseModel):
+    name: str
+    value: int
+
+class OverviewData(BaseModel):
+    metrics: SLAMetrics
+    slaByPeriod: List[BarChartData]
+    topDelayedSellers: List[RankingEntry]
+    topCriticalZones: List[RankingEntry]
+    topProblematicCeps: List[RankingEntry]
