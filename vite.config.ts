@@ -38,6 +38,7 @@ export default defineConfig({
         changeOrigin: true,
         timeout: 60000, // 60 seconds
         proxyTimeout: 60000,
+        followRedirects: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
