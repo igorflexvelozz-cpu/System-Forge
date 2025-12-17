@@ -12,6 +12,10 @@ upload_repo = UploadRepository()
 
 @router.post("/", response_model=UploadResponse)
 async def upload_file(file: UploadFile = File(...), fileType: str = Form(...)):
+    # Check file size (50MB limit)
+    if file.size > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
+    
     if fileType == "logmanager":
         return await upload_mother(file)
     elif fileType == "gestora":
@@ -21,6 +25,10 @@ async def upload_file(file: UploadFile = File(...), fileType: str = Form(...)):
 
 @router.post("/mother", response_model=UploadResponse)
 async def upload_mother(file: UploadFile = File(...)):
+    # Check file size (50MB limit)
+    if file.size > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
+    
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="File must be Excel")
     
@@ -38,6 +46,10 @@ async def upload_mother(file: UploadFile = File(...)):
 
 @router.post("/loose", response_model=UploadResponse)
 async def upload_loose(file: UploadFile = File(...)):
+    # Check file size (50MB limit)
+    if file.size > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
+    
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="File must be Excel")
     
@@ -50,6 +62,8 @@ async def upload_loose(file: UploadFile = File(...)):
         await f.write(content)
     
     await upload_repo.create(job_id, {"type": "loose", "file_path": file_path, "status": "uploaded"})
+    
+    return UploadResponse(job_id=job_id, message="Loose file uploaded successfully")
     
 @router.get("/status")
 async def get_upload_status():

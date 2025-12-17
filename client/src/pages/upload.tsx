@@ -67,24 +67,36 @@ export default function UploadPage() {
       formData.append("file", file);
       formData.append("fileType", fileType);
       
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes timeout
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = "Erro ao fazer upload";
-        try {
-          const error = JSON.parse(errorText);
-          errorMessage = error.message || errorMessage;
-        } catch {
-          errorMessage = errorText || errorMessage;
+      try {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          let errorMessage = "Erro ao fazer upload";
+          try {
+            const error = JSON.parse(errorText);
+            errorMessage = error.message || errorMessage;
+          } catch {
+            errorMessage = errorText || errorMessage;
+          }
+          throw new Error(errorMessage);
         }
-        throw new Error(errorMessage);
+        
+        return response.json();
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Upload timed out. File too large or network issue.');
+        }
+        throw error;
       }
-      
-      return response.json();
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/upload/status"] });
@@ -151,8 +163,8 @@ export default function UploadPage() {
       
       setProgress(10);
       const interval = setInterval(() => {
-        setProgress((prev) => Math.min(prev + 10, 90));
-      }, 200);
+        setProgress((prev) => Math.min(prev + 5, 90));
+      }, 1000);
       
       try {
         await uploadMutation.mutateAsync({ file, fileType });
