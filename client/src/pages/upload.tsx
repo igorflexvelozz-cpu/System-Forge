@@ -67,36 +67,54 @@ export default function UploadPage() {
       formData.append("file", file);
       formData.append("fileType", fileType);
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes timeout
+      const maxRetries = 3;
+      let lastError: Error;
       
-      try {
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes timeout
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          let errorMessage = "Erro ao fazer upload";
-          try {
-            const error = JSON.parse(errorText);
-            errorMessage = error.message || errorMessage;
-          } catch {
-            errorMessage = errorText || errorMessage;
+        try {
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = "Erro ao fazer upload";
+            try {
+              const error = JSON.parse(errorText);
+              errorMessage = error.message || errorMessage;
+            } catch {
+              errorMessage = errorText || errorMessage;
+            }
+            throw new Error(errorMessage);
           }
-          throw new Error(errorMessage);
+          
+          return response.json();
+        } catch (error) {
+          clearTimeout(timeoutId);
+          lastError = error as Error;
+          
+          if (error.name === 'AbortError') {
+            throw new Error('Upload timed out. File too large or network issue.');
+          }
+          
+          // Retry on network errors, but not on server errors (4xx, 5xx handled above)
+          if (attempt < maxRetries && (error.name === 'TypeError' || error.message.includes('fetch'))) {
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            continue;
+          }
+          
+          throw error;
         }
-        
-        return response.json();
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          throw new Error('Upload timed out. File too large or network issue.');
-        }
-        throw error;
       }
+      
+      throw lastError!;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/upload/status"] });
