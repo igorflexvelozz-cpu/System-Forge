@@ -73,8 +73,15 @@ export default function UploadPage() {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao fazer upload");
+        const errorText = await response.text();
+        let errorMessage = "Erro ao fazer upload";
+        try {
+          const error = JSON.parse(errorText);
+          errorMessage = error.message || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
       
       return response.json();
