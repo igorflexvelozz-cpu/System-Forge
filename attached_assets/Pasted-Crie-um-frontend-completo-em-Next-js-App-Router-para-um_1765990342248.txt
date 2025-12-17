@@ -1,0 +1,315 @@
+Crie um frontend completo em Next.js (App Router) para um sistema corporativo chamado Flex Velozz | ATLAS, focado em SLA e performance logística para operações do Mercado Livre (MELI).
+
+⚠️ REGRAS OBRIGATÓRIAS
+
+NÃO criar tela de login
+
+NÃO criar autenticação
+
+NÃO criar usuários
+
+O sistema deve abrir diretamente no dashboard
+
+O frontend NÃO calcula SLA, apenas consome dados do backend
+
+Todo o sistema é apenas leitura + upload de arquivos
+
+🧠 CONTEXTO DO SISTEMA
+
+O Flex Velozz | ATLAS é um sistema executivo de análise de SLA que:
+
+Consolida duas planilhas (Logmanager + planilha gestora)
+
+Exibe métricas, rankings e gráficos
+
+É usado internamente e apresentado ao Mercado Livre
+
+Precisa ser extremamente profissional, moderno e confiável
+
+🏗️ TECNOLOGIA
+
+Next.js (App Router)
+
+TypeScript
+
+Layout responsivo
+
+Componentização clara
+
+Gráficos modernos (barras verticais)
+
+Design corporativo (nível executivo)
+
+🎨 IDENTIDADE VISUAL
+
+Nome do sistema sempre visível: Flex Velozz | ATLAS
+
+Paleta corporativa (azul, cinza, verde)
+
+Tipografia limpa e profissional
+
+Visual comparável a dashboards enterprise (ex: Logmanager)
+
+Nada lúdico ou informal
+
+🧭 ESTRUTURA GLOBAL DO LAYOUT
+Header fixo
+
+Logo: Flex Velozz | ATLAS
+
+Subtítulo: SLA & Performance Logística — Mercado Livre
+
+Indicador de última atualização (data/hora)
+
+Status do sistema (processado / em processamento / erro)
+
+Menu lateral esquerdo
+
+Itens obrigatórios:
+
+Visão Geral
+
+Upload & Processamento
+
+SLA de Performance
+
+Atrasos & Exceções
+
+Vendedores
+
+Zonas & CEPs
+
+Rankings
+
+Base Consolidada
+
+Histórico & Comparativos
+
+📊 TELAS OBRIGATÓRIAS
+1️⃣ VISÃO GERAL (Dashboard principal)
+
+Cards de KPI:
+
+Total de pacotes
+
+% SLA dentro do prazo
+
+% SLA fora do prazo
+
+Total de entregas atrasadas
+
+Total de vendedores
+
+Total de zonas
+
+Gráfico principal:
+
+SLA Geral (barras verticais)
+
+Blocos:
+
+Top 5 vendedores com mais atrasos
+
+Top 5 zonas críticas
+
+Top 5 CEPs com problemas
+
+2️⃣ UPLOAD & PROCESSAMENTO
+
+Upload da planilha mãe (Logmanager)
+
+Upload da planilha avulsa (gestora)
+
+Exibição de:
+
+Nome do arquivo
+
+Status
+
+Total de linhas
+
+Validação de colunas
+
+Painel de status do processamento
+
+Alertas visuais de erro
+
+3️⃣ SLA DE PERFORMANCE
+
+Gráfico de SLA por período
+
+Linha de meta (ex: 95%)
+
+Filtros:
+
+Período
+
+Zona
+
+Vendedor
+
+Centro de custo
+
+Tabela analítica:
+
+Pedido
+
+Vendedor
+
+Zona
+
+Prazo
+
+Entrega
+
+Atraso
+
+Status SLA
+
+4️⃣ ATRASOS & EXCEÇÕES
+
+KPIs:
+
+Total de atrasos
+
+Média de atraso
+
+Maior atraso
+
+Gráficos de barras verticais:
+
+Atrasos por dia
+
+Atrasos por zona
+
+Atrasos por CEP
+
+Atrasos por vendedor (mostrar nome)
+
+5️⃣ VENDEDORES
+
+Cards por vendedor com:
+
+Nome
+
+Total de pacotes
+
+Total de atrasos
+
+% SLA
+
+Ranking
+
+Gráficos:
+
+Volume por vendedor
+
+Atrasos por vendedor
+
+SLA por vendedor
+
+6️⃣ ZONAS & CEPS
+
+Gráficos:
+
+Zonas com mais atrasos
+
+CEPs mais problemáticos
+
+Tabela:
+
+Zona
+
+CEP
+
+Volume
+
+Atrasos
+
+SLA médio
+
+7️⃣ RANKINGS
+
+Rankings visuais:
+
+Vendedores com mais atrasos
+
+Zonas com mais atrasos
+
+Vendedores com maior volume de pacotes
+
+Barras verticais
+
+Nome sempre visível
+
+8️⃣ BASE CONSOLIDADA
+
+Tabela completa com TODAS as colunas:
+
+Planilha mãe + planilha avulsa
+
+Funcionalidades:
+
+Busca
+
+Filtro
+
+Ordenação
+
+Paginação
+
+Exportação
+
+9️⃣ HISTÓRICO & COMPARATIVOS
+
+Comparação de períodos:
+
+Semana vs semana
+
+Mês vs mês
+
+Gráficos:
+
+Evolução do SLA
+
+Tendência de atrasos
+
+Performance de vendedores ao longo do tempo
+
+📦 DADOS (FRONTEND)
+
+Consumir dados via API REST
+
+Trabalhar com dados grandes
+
+Loading states claros
+
+Tratamento visual de erro
+
+Nunca assumir dados inexistentes
+
+🧠 UX OBRIGATÓRIA
+
+Navegação rápida
+
+Componentes reutilizáveis
+
+Tudo clicável aprofunda análise
+
+Zero telas vazias sem explicação
+
+Mensagens claras quando não há dados
+
+🏁 RESULTADO ESPERADO
+
+O resultado deve ser um frontend completo, funcional, profissional e pronto para produção, sem telas faltantes, sem login, sem placeholders genéricos, refletindo exatamente o sistema Flex Velozz | ATLAS como plataforma de SLA e performance logística para o Mercado Livre.
+
+⚠️ IMPORTANTE
+
+Não simplifique.
+Não omita telas.
+Não omita gráficos.
+Não crie login.
+Não crie usuários.
+
+Crie o frontend completo, seguindo fielmente todas as instruções acima.
