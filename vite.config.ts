@@ -1,5 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+// Increase follow-redirects maxBodyLength so Vite proxy can forward large request bodies (file uploads)
+// without hitting the default body size limit (which throws ERR_FR_MAX_BODY_LENGTH_EXCEEDED).
+import * as followRedirects from 'follow-redirects';
+followRedirects.maxBodyLength = Infinity;
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
@@ -32,16 +36,30 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8001',
-        changeOrigin: true,
-        timeout: 600000, // 10 minutes
-        proxyTimeout: 600000,
-        followRedirects: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    },
+    // Allow configuring backend URL via environment (VITE_BACKEND_URL or BACKEND_URL).
+    // If not set, default to http://localhost:8001 and warn during development.
+    // The proxy rewrites `/api/*` to the backend root (drops the /api prefix).
+    // Example to override when running vite: VITE_BACKEND_URL=http://localhost:8001 npm run dev
+    // NOTE: ECONNREFUSED proxy errors mean the backend isn't running at the target URL.
+    proxy: (() => {
+      const backend = process.env.VITE_BACKEND_URL || process.env.BACKEND_URL || "http://localhost:8000";
+      if (!process.env.VITE_BACKEND_URL && !process.env.BACKEND_URL && process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.warn(`[vite] VITE_BACKEND_URL not set — dev proxy will target ${backend}. Start backend or set VITE_BACKEND_URL to avoid ECONNREFUSED proxy errors.`);
+      }
+
+      return {
+        '/api': {
+          target: backend,
+          changeOrigin: true,
+          timeout: 600000, // 10 minutes
+          proxyTimeout: 600000,
+          followRedirects: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      };
+    })(),
+
     fs: {
       strict: true,
       deny: ["**/.*"],

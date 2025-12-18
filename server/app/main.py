@@ -37,3 +37,16 @@ async def get_system_status():
             "lastUpdate": None,
             "message": "Sistema aguardando dados"
         }
+
+@app.get("/health")
+async def health():
+    """Simple health check for readiness: checks Firestore configuration and returns status."""
+    from .config.firebase import get_db
+    try:
+        # get_db will raise RuntimeError if not configured
+        get_db()
+        firebase_ok = True
+    except RuntimeError:
+        firebase_ok = False
+
+    return {"ok": True, "firebase_configured": firebase_ok}

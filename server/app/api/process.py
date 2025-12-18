@@ -23,7 +23,8 @@ async def start_process(request: ProcessStartRequest, background_tasks: Backgrou
     mother = await upload_repo.get(request.mother_file_id)
     loose = await upload_repo.get(request.loose_file_id)
     if not mother or not loose:
-        raise HTTPException(status_code=404, detail="Files not found")
+        # Could be missing files or backend unavailable; surface as 503 for backend issues
+        raise HTTPException(status_code=503, detail="Data backend unavailable or files not found")
     
     await process_repo.create(job_id, {"status": "pending", "progress": 0, "mother_id": request.mother_file_id, "loose_id": request.loose_file_id})
     
@@ -54,11 +55,20 @@ async def process_data(job_id: str):
         await process_repo.update(job_id, {"status": "processing", "progress": 10})
         
         process = await process_repo.get(job_id)
-        mother_id = process["mother_id"]
-        loose_id = process["loose_id"]
+        if not process:
+            # If the process cannot be retrieved, abort processing
+            await process_repo.update(job_id, {"status": "failed", "message": "Process data not available"})
+            return
+
+        mother_id = process.get("mother_id")
+        loose_id = process.get("loose_id")
         
         mother_data = await upload_repo.get(mother_id)
         loose_data = await upload_repo.get(loose_id)
+        if not mother_data or not loose_data:
+            # Backend or files missing; mark process failed
+            await process_repo.update(job_id, {"status": "failed", "message": "Input files not found or data backend unavailable"})
+            return
         
         # Load and normalize
         service = DataProcessingService()

@@ -18,6 +18,9 @@ async def get_consolidated(
     filter_zone: Optional[str] = Query(None)
 ):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     
     df = pd.DataFrame(data)

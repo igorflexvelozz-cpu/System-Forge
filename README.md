@@ -118,6 +118,24 @@ Isso inicia o frontend build (porta 4173) e backend (porta 8001) simultaneamente
 - `npm run check` - Verificar TypeScript
 - `python -m py_compile server/app/main.py` - Verificar Python
 
+Inicie o backend antes de rodar o Vite dev para evitar erros de proxy (ECONNREFUSED). Exemplos:
+
+- Rodar apenas o frontend:
+
+  ``npm run dev``
+
+- Rodar apenas o backend (na pasta raiz do projeto):
+
+  ``cd server && python run.py``
+
+  By default the server listens on port **8000**. You can override the port used by `server/run.py` with the `BACKEND_PORT` environment variable (eg. `BACKEND_PORT=8001 python run.py`).
+
+- Rodar ambos em paralelo (Windows/Unix):
+
+  ``npm run dev-full``
+
+Defina `VITE_BACKEND_URL` para apontar o proxy para outro endereço (ex: `VITE_BACKEND_URL=http://localhost:8000 npm run dev`). You can also create a `.env.development` file and set `VITE_BACKEND_URL=http://localhost:8000` to avoid the dev warning.
+
 ## Produção
 
 O sistema está configurado para produção com:

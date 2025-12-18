@@ -14,11 +14,15 @@ process_repo = ProcessRepository()
 @router.get("/sla/general", response_model=SLAGeneralResponse)
 async def get_sla_general(job_id: str = Query(...)):
     kpis = await sla_repo.get(f"{job_id}_kpis")
+    if not kpis:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     return SLAGeneralResponse(**kpis)
 
 @router.get("/sla/period", response_model=List[SLAPeriodResponse])
 async def get_sla_period(job_id: str = Query(...)):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     # Assume period is month from data_pedido
     df = pd.DataFrame(data)
@@ -29,6 +33,8 @@ async def get_sla_period(job_id: str = Query(...)):
 @router.get("/sla/seller", response_model=List[SLASellerResponse])
 async def get_sla_seller(job_id: str = Query(...)):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     results = AnalyticsEngine.calculate_sla_by_group(data, "Vendedor")
     return [SLASellerResponse(seller=r["Vendedor"], sla_percentage=r["sla_percentage"]) for r in results]
@@ -36,6 +42,8 @@ async def get_sla_seller(job_id: str = Query(...)):
 @router.get("/sla/zone", response_model=List[SLAZoneResponse])
 async def get_sla_zone(job_id: str = Query(...)):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     results = AnalyticsEngine.calculate_sla_by_group(data, "Zona")
     return [SLAZoneResponse(zone=r["Zona"], sla_percentage=r["sla_percentage"]) for r in results]
@@ -43,6 +51,8 @@ async def get_sla_zone(job_id: str = Query(...)):
 @router.get("/sla/cep", response_model=List[SLACEPResponse])
 async def get_sla_cep(job_id: str = Query(...)):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     results = AnalyticsEngine.calculate_sla_by_group(data, "CEP")
     return [SLACEPResponse(cep=r["CEP"], sla_percentage=r["sla_percentage"]) for r in results]
@@ -50,6 +60,8 @@ async def get_sla_cep(job_id: str = Query(...)):
 @router.get("/delays/general", response_model=DelaysGeneralResponse)
 async def get_delays_general(job_id: str = Query(...)):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     delays = AnalyticsEngine.calculate_delays(data)
     return DelaysGeneralResponse(**delays)
@@ -57,6 +69,8 @@ async def get_delays_general(job_id: str = Query(...)):
 @router.get("/delays/day", response_model=List[DelaysDayResponse])
 async def get_delays_day(job_id: str = Query(...)):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     df = pd.DataFrame(data)
     delays_by_day = df[df["sla_calculated"].isin(["Entregue com atraso", "Fora do prazo"])].groupby("data_status_dia").size().reset_index(name="delays")
@@ -65,6 +79,8 @@ async def get_delays_day(job_id: str = Query(...)):
 @router.get("/delays/seller", response_model=List[DelaysSellerResponse])
 async def get_delays_seller(job_id: str = Query(...)):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     df = pd.DataFrame(data)
     delays_by_seller = df[df["sla_calculated"].isin(["Entregue com atraso", "Fora do prazo"])].groupby("Vendedor").size().reset_index(name="delays")
@@ -73,6 +89,8 @@ async def get_delays_seller(job_id: str = Query(...)):
 @router.get("/delays/zone", response_model=List[DelaysZoneResponse])
 async def get_delays_zone(job_id: str = Query(...)):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     df = pd.DataFrame(data)
     delays_by_zone = df[df["sla_calculated"].isin(["Entregue com atraso", "Fora do prazo"])].groupby("Zona").size().reset_index(name="delays")
@@ -81,6 +99,8 @@ async def get_delays_zone(job_id: str = Query(...)):
 @router.get("/delays/cep", response_model=List[DelaysCEPResponse])
 async def get_delays_cep(job_id: str = Query(...)):
     data_doc = await data_repo.get(f"{job_id}_data")
+    if not data_doc:
+        raise HTTPException(status_code=503, detail="Data backend unavailable")
     data = data_doc["data"]
     df = pd.DataFrame(data)
     delays_by_cep = df[df["sla_calculated"].isin(["Entregue com atraso", "Fora do prazo"])].groupby("CEP").size().reset_index(name="delays")
