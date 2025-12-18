@@ -10,7 +10,10 @@ router = APIRouter()
 
 upload_repo = UploadRepository()
 
-@router.post("/", response_model=UploadResponse)
+# Importante: usar caminho "" em vez de "/"
+# para que, com o prefixo "/upload", a rota final
+# seja exatamente "/upload" (sem redirect 307).
+@router.post("", response_model=UploadResponse)
 async def upload_file(file: UploadFile = File(...), fileType: str = Form(...)):
     # Check file size (100MB limit)
     if file.size and file.size > 100 * 1024 * 1024:
