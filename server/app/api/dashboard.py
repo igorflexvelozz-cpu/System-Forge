@@ -14,6 +14,7 @@ from ..models import (
     PackageRecord,
     HistoricalData,
     FilterOptions,
+    RankingsData,
 )
 from ..repositories import DataRepository, ProcessRepository, SLARepository, RankingsRepository
 from ..analytics import AnalyticsEngine
@@ -407,7 +408,7 @@ async def get_zones():
     )
 
 
-@router.get("/rankings", response_model="RankingsData")
+@router.get("/rankings", response_model=RankingsData)
 async def get_rankings_dashboard():
     """
     Rankings view used by the frontend dashboard.
@@ -422,8 +423,6 @@ async def get_rankings_dashboard():
     sellers_most_delays = rankings.get("sellers_most_delays", [])
     zones_most_delays = rankings.get("zones_most_delays", [])
     sellers_highest_volume = rankings.get("sellers_highest_volume", [])
-
-    from ..models import RankingsData as RankingsDataModel
 
     def to_ranking_entries(items, name_key: str, value_key: str) -> List[RankingEntry]:
         entries: List[RankingEntry] = []
@@ -442,7 +441,7 @@ async def get_rankings_dashboard():
     zones_by_delays = to_ranking_entries(zones_most_delays, "Zona", "delays")
     sellers_by_volume = to_ranking_entries(sellers_highest_volume, "Vendedor", "volume")
 
-    return RankingsDataModel(
+    return RankingsData(
         sellersByDelays=sellers_by_delays,
         zonesByDelays=zones_by_delays,
         sellersByVolume=sellers_by_volume,
