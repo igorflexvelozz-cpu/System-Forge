@@ -44,6 +44,15 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    hmr: {
+      clientPort: 3000,
+      port: 3000,
+    },
+    watch: {
+      usePolling: true,
+    },
+    host: true,
+    strictPort: true,
     // Allow configuring backend URL via environment (VITE_BACKEND_URL or BACKEND_URL).
     // If not set, default to http://localhost:8001 and warn during development.
     // The proxy rewrites `/api/*` to the backend root (drops the /api prefix).
@@ -67,7 +76,6 @@ export default defineConfig({
         },
       };
     })(),
-
     fs: {
       strict: true,
       deny: ["**/.*"],
