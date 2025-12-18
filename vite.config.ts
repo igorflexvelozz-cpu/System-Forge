@@ -1,9 +1,17 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-// Increase follow-redirects maxBodyLength so Vite proxy can forward large request bodies (file uploads)
-// without hitting the default body size limit (which throws ERR_FR_MAX_BODY_LENGTH_EXCEEDED).
+// Configure follow-redirects to handle large file uploads
 import * as followRedirects from 'follow-redirects';
-followRedirects.maxBodyLength = Infinity;
+
+// Configure maxBodyLength for file uploads
+if (followRedirects && typeof followRedirects.wrap === 'function') {
+  try {
+    // @ts-ignore - follow-redirects types don't include maxBodyLength but it's supported
+    followRedirects.wrap({ maxBodyLength: Infinity });
+  } catch (error) {
+    console.warn('Failed to configure follow-redirects:', error);
+  }
+}
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
