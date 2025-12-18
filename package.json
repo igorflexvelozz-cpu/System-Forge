@@ -5,10 +5,10 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "dev-full": "concurrently \"npm run dev\" \"cd server && & .venv\\Scripts\\Activate.ps1 && python run.py\"",
+    "dev-full": "concurrently \"npm run dev\" \"cd server && python run.py\"",
     "build": "vite build",
     "start": "vite preview",
-    "prod": "npm run build && concurrently \"npm run start\" \"cd server && & .venv\\Scripts\\Activate.ps1 && python run.py\"",
+    "prod": "npm run build && concurrently \"npm run start\" \"cd server && python run.py\"",
     "check": "tsc"
   },
   "dependencies": {

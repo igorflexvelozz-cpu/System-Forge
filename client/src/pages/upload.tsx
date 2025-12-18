@@ -55,6 +55,7 @@ export default function UploadPage() {
     refetchInterval: 5000
   });
 
+  const MAX_RETRIES = 3;
   const uploadMutation = useMutation({
     mutationFn: async ({
       file,
@@ -65,53 +66,70 @@ export default function UploadPage() {
       fileType: "logmanager" | "gestora";
       onProgress: (progress: number) => void;
     }) => {
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable) {
-            const percentComplete = Math.round((event.loaded / event.total) * 100);
-            onProgress(percentComplete);
+      let retryCount = 0;
+      let lastError: Error | null = null;
+
+      while (retryCount <= MAX_RETRIES) {
+        try {
+          return await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            
+            xhr.upload.addEventListener('progress', (event) => {
+              if (event.lengthComputable) {
+                const percentComplete = Math.round((event.loaded / event.total) * 100);
+                onProgress(percentComplete);
+              }
+            });
+            
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  const response = JSON.parse(xhr.responseText);
+                  resolve(response);
+                } catch (e) {
+                  resolve(xhr.responseText);
+                }
+              } else {
+                let errorMessage = "Erro ao fazer upload";
+                try {
+                  const error = JSON.parse(xhr.responseText);
+                  errorMessage = error.message || errorMessage;
+                } catch {
+                  errorMessage = xhr.statusText || xhr.responseText || errorMessage;
+                }
+                reject(new Error(errorMessage));
+              }
+            };
+            
+            xhr.onerror = () => {
+              reject(new Error('Erro de rede durante o upload'));
+            };
+            
+            xhr.ontimeout = () => {
+              reject(new Error('Upload excedeu o tempo limite. O arquivo pode estar muito grande ou há problemas de conexão.'));
+            };
+            
+            xhr.timeout = 600000; // 10 minutos
+            
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("fileType", fileType);
+            
+            xhr.open('POST', '/api/upload', true);
+            xhr.send(formData);
+          });
+        } catch (error) {
+          lastError = error as Error;
+          retryCount++;
+          if (retryCount <= MAX_RETRIES) {
+            // Espera exponencial antes de tentar novamente
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+            continue;
           }
-        });
-        
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              const response = JSON.parse(xhr.responseText);
-              resolve(response);
-            } catch (e) {
-              resolve(xhr.responseText);
-            }
-          } else {
-            let errorMessage = "Erro ao fazer upload";
-            try {
-              const error = JSON.parse(xhr.responseText);
-              errorMessage = error.message || errorMessage;
-            } catch {
-              errorMessage = xhr.responseText || errorMessage;
-            }
-            reject(new Error(errorMessage));
-          }
-        });
-        
-        xhr.addEventListener('error', () => {
-          reject(new Error('Erro de rede durante o upload'));
-        });
-        
-        xhr.timeout = 600000; // 10 minutes timeout
-        
-        xhr.addEventListener('timeout', () => {
-          reject(new Error('Upload timed out. File too large or network issue.'));
-        });
-        
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("fileType", fileType);
-        
-        xhr.open('POST', '/api/upload');
-        xhr.send(formData);
-      });
+          throw lastError;
+        }
+      }
+      throw lastError;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/upload/status"] });

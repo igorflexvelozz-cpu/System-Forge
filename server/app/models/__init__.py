@@ -152,12 +152,17 @@ class SLAMetrics(BaseModel):
     totalZones: int
 
 class BarChartData(BaseModel):
-    name: str
+    # Label is used as the X-axis category in the frontend
+    label: str
     value: float
+    color: Optional[str] = None
 
 class RankingEntry(BaseModel):
+    rank: Optional[int] = None
     name: str
     value: int
+    percentage: Optional[float] = None
+    secondaryValue: Optional[float] = None
 
 class OverviewData(BaseModel):
     metrics: SLAMetrics
@@ -165,3 +170,165 @@ class OverviewData(BaseModel):
     topDelayedSellers: List[RankingEntry]
     topCriticalZones: List[RankingEntry]
     topProblematicCeps: List[RankingEntry]
+
+
+# ============================================
+# Shared dashboard models (mirror of shared/schema.ts)
+# ============================================
+
+
+class LineChartData(BaseModel):
+    date: str
+    value: float
+    target: Optional[float] = None
+
+
+class PackageRecord(BaseModel):
+    id: str
+    dataPedido: Optional[str] = None
+    pedido: str
+    statusDoDia: Optional[str] = None
+    beepDoDia: Optional[str] = None
+    cliente: Optional[str] = None
+    conta: Optional[str] = None
+    zona: Optional[str] = None
+    responsabilidade: Optional[str] = None
+    bipagem: Optional[str] = None
+    criacao: Optional[str] = None
+    deveriaSerEntregue: Optional[str] = None
+    pacote: Optional[str] = None
+    etiqueta: Optional[str] = None
+    pedidoMarketplace: Optional[str] = None
+    frete: Optional[str] = None
+    vendedor: Optional[str] = None
+    centroDeCusto: Optional[str] = None
+    statusDiaGestora: Optional[str] = None
+    nomeComprador: Optional[str] = None
+    cep: Optional[str] = None
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    complemento: Optional[str] = None
+    dataStatusDia: Optional[str] = None
+    previsaoEntrega: Optional[str] = None
+    entrega: Optional[str] = None
+    sla: Optional[str] = None
+    prazo: Optional[float] = None
+    atraso: Optional[float] = None
+    source: Optional[str] = None
+
+
+# SLA metrics with delay stats (used in HistoricalData)
+class ExtendedSLAMetrics(SLAMetrics):
+    averageDelay: Optional[float] = None
+    maxDelay: Optional[float] = None
+
+
+class SellerMetrics(BaseModel):
+    id: str
+    name: str
+    totalPackages: int
+    totalDelays: int
+    withinSla: int
+    outsideSla: int
+    slaPercentage: float
+    averageDelay: float
+    rank: int
+
+
+class ZoneMetrics(BaseModel):
+    id: str
+    zone: str
+    totalPackages: int
+    totalDelays: int
+    withinSla: int
+    outsideSla: int
+    slaPercentage: float
+    averageDelay: float
+
+
+class CepMetrics(BaseModel):
+    id: str
+    cep: str
+    totalPackages: int
+    totalDelays: int
+    withinSla: int
+    outsideSla: int
+    slaPercentage: float
+    averageDelay: float
+
+
+class DelaysMetrics(BaseModel):
+    totalDelays: int
+    averageDelay: float
+    maxDelay: int
+
+
+class DelaysData(BaseModel):
+    metrics: DelaysMetrics
+    delaysByDay: List[BarChartData]
+    delaysByZone: List[BarChartData]
+    delaysByCep: List[BarChartData]
+    delaysBySeller: List[BarChartData]
+
+
+class SellersData(BaseModel):
+    sellers: List[SellerMetrics]
+    volumeChart: List[BarChartData]
+    delaysChart: List[BarChartData]
+    slaChart: List[BarChartData]
+
+
+class ZonesData(BaseModel):
+    zones: List[ZoneMetrics]
+    ceps: List[CepMetrics]
+    zoneDelaysChart: List[BarChartData]
+    cepDelaysChart: List[BarChartData]
+
+
+class RankingsData(BaseModel):
+    sellersByDelays: List[RankingEntry]
+    zonesByDelays: List[RankingEntry]
+    sellersByVolume: List[RankingEntry]
+
+
+class SlaPerformanceData(BaseModel):
+    slaTrend: List[LineChartData]
+    records: List[PackageRecord]
+    totalRecords: int
+
+
+class HistoricalPeriodComparison(BaseModel):
+    current: SLAMetrics
+    previous: SLAMetrics
+    percentageChange: float
+
+
+class SellerPerformancePeriod(BaseModel):
+    period: str
+    slaPercentage: float
+
+
+class SellerPerformanceEntry(BaseModel):
+    seller: str
+    periods: List[SellerPerformancePeriod]
+
+
+class HistoricalData(BaseModel):
+    slaEvolution: List[LineChartData]
+    delayTrend: List[LineChartData]
+    periodComparison: HistoricalPeriodComparison
+    sellerPerformance: List[SellerPerformanceEntry]
+
+
+class DateRange(BaseModel):
+    min: str
+    max: str
+
+
+class FilterOptions(BaseModel):
+    zones: List[str]
+    sellers: List[str]
+    costCenters: List[str]
+    dateRange: Optional[DateRange] = None

@@ -1,17 +1,5 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-// Configure follow-redirects to handle large file uploads
-import * as followRedirects from 'follow-redirects';
-
-// Configure maxBodyLength for file uploads
-if (followRedirects && typeof followRedirects.wrap === 'function') {
-  try {
-    // @ts-ignore - follow-redirects types don't include maxBodyLength but it's supported
-    followRedirects.wrap({ maxBodyLength: Infinity });
-  } catch (error) {
-    console.warn('Failed to configure follow-redirects:', error);
-  }
-}
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
