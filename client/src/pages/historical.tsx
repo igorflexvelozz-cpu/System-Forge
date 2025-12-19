@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart } from "@/components/dashboard/line-chart";
 import { KpiCard } from "@/components/dashboard/kpi-card";
@@ -13,13 +13,23 @@ import {
 import { TrendingUp, TrendingDown, ArrowRight, Upload, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { usePageTracking, useAnalytics } from "@/hooks/use-analytics";
 import type { HistoricalData } from "@shared/schema";
 
 type ComparisonMode = "week" | "month";
 
 export default function Historical() {
   const [, setLocation] = useLocation();
+  const analytics = useAnalytics();
+  usePageTracking("Histórico & Comparativos", "/historico");
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("week");
+
+  // Track comparison mode changes
+  useEffect(() => {
+    analytics.trackDashboardInteraction("comparison_mode_changed", "historical", {
+      mode: comparisonMode
+    });
+  }, [comparisonMode, analytics]);
 
   const { data, isLoading, error } = useQuery<HistoricalData>({
     queryKey: ["/api/dashboard/historical", comparisonMode]

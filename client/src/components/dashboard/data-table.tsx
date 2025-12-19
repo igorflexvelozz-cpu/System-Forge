@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ import {
   ArrowDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 export interface Column<T> {
   key: keyof T | string;
@@ -68,11 +69,32 @@ export function DataTable<T extends Record<string, unknown>>({
   isLoading = false,
   testId
 }: DataTableProps<T>) {
+  const analytics = useAnalytics();
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  // Track search
+  useEffect(() => {
+    if (search) {
+      analytics.trackTableInteraction("search", testId || "table", {
+        search_term: search,
+        result_count: filteredData.length
+      });
+    }
+  }, [search, analytics, testId]);
+
+  // Track pagination
+  useEffect(() => {
+    if (currentPage > 1) {
+      analytics.trackTableInteraction("paginate", testId || "table", {
+        page: currentPage,
+        page_size: pageSize
+      });
+    }
+  }, [currentPage, pageSize, analytics, testId]);
 
   const getValue = (row: T, column: Column<T>) => {
     if (column.accessor) {
@@ -120,8 +142,15 @@ export function DataTable<T extends Record<string, unknown>>({
   const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
 
   const handleSort = (key: string) => {
+    const newDirection = sortKey === key && sortDirection === "asc" ? "desc" : "asc";
+    
+    analytics.trackTableInteraction("sort", testId || "table", {
+      column: key,
+      direction: newDirection
+    });
+
     if (sortKey === key) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(newDirection);
     } else {
       setSortKey(key);
       setSortDirection("asc");

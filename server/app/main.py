@@ -1,17 +1,35 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware import Middleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from .api import router
 
-app = FastAPI(title="Flex Velozz | ATLAS Backend", version="1.0.0")
-
-# CORS for frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, specify frontend URL
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title="Flex Velozz | ATLAS Backend",
+    version="1.0.0",
+    middleware=[
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+            expose_headers=["Content-Disposition"]
+        )
+    ]
 )
+
+app.router.default_max_request_body_size = 200 * 1024 * 1024  # 200MB
+
+exception_handler = app.exception_handler
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+    )
 
 app.include_router(router)
 

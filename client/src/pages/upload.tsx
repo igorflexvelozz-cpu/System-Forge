@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { FileUpload } from "@/components/dashboard/file-upload";
 import { ProcessingStatus } from "@/components/dashboard/processing-status";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle, FileSpreadsheet, Info } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAnalytics, usePageTracking } from "@/hooks/use-analytics";
 import type { UploadedFile, ProcessingStatus as ProcessingStatusType } from "@shared/schema";
 
 const REQUIRED_COLUMNS_LOGMANAGER = [
@@ -43,6 +44,8 @@ const REQUIRED_COLUMNS_GESTORA = [
 
 export default function UploadPage() {
   const { toast } = useToast();
+  const analytics = useAnalytics();
+  usePageTracking("Upload & Processamento", "/upload");
   const [logmanagerProgress, setLogmanagerProgress] = useState(0);
   const [gestoraProgress, setGestoraProgress] = useState(0);
 
@@ -52,7 +55,18 @@ export default function UploadPage() {
     processing: ProcessingStatusType;
   }>({
     queryKey: ["/api/upload/status"],
-    refetchInterval: 5000
+    refetchInterval: 5000,
+    // Use direct fetch for status to avoid proxy issues
+    queryFn: async () => {
+      const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const response = await fetch(`${backendUrl}/upload/status`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch upload status');
+      }
+      return response.json();
+    }
   });
 
   const MAX_RETRIES = 3;
@@ -115,7 +129,11 @@ export default function UploadPage() {
             formData.append("file", file);
             formData.append("fileType", fileType);
             
-            xhr.open('POST', '/api/upload', true);
+            // Use direct backend URL to bypass Vite proxy for large file uploads
+            const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+            xhr.open('POST', `${backendUrl}/upload`, true);
+            
+            // Don't set Content-Type header, let the browser set it with the correct boundary
             xhr.send(formData);
           });
         } catch (error) {
@@ -133,6 +151,7 @@ export default function UploadPage() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/upload/status"] });
+      analytics.trackUpload(variables.fileType, true, variables.file.size);
       toast({
         title: "Upload realizado com sucesso",
         description: `A planilha ${
@@ -140,7 +159,8 @@ export default function UploadPage() {
         } foi enviada.`
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables) => {
+      analytics.trackUpload(variables.fileType, false, variables.file.size, error.message);
       toast({
         variant: "destructive",
         title: "Erro no upload",
@@ -151,17 +171,20 @@ export default function UploadPage() {
 
   const processMutation = useMutation({
     mutationFn: async () => {
+      analytics.trackProcessing("started");
       return apiRequest("POST", "/api/upload/process");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/upload/status"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      analytics.trackProcessing("completed");
       toast({
         title: "Processamento iniciado",
         description: "O processamento das planilhas foi iniciado."
       });
     },
     onError: (error: Error) => {
+      analytics.trackProcessing("failed", undefined, error.message);
       toast({
         variant: "destructive",
         title: "Erro ao processar",

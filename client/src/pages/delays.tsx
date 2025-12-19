@@ -8,10 +8,12 @@ import {
 } from "@/components/dashboard/loading-skeleton";
 import { AlertTriangle, Clock, TrendingUp, Upload } from "lucide-react";
 import { useLocation } from "wouter";
+import { usePageTracking } from "@/hooks/use-analytics";
 import type { DelaysData } from "@shared/schema";
 
 export default function Delays() {
   const [, setLocation] = useLocation();
+  usePageTracking("Atrasos & Exceções", "/atrasos");
 
   const { data, isLoading, error } = useQuery<DelaysData>({
     queryKey: ["/api/dashboard/delays"]

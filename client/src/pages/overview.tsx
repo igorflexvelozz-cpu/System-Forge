@@ -18,10 +18,12 @@ import {
   Upload
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { usePageTracking } from "@/hooks/use-analytics";
 import type { OverviewData } from "@shared/schema";
 
 export default function Overview() {
   const [, setLocation] = useLocation();
+  usePageTracking("Visão Geral", "/");
 
   const { data, isLoading, error } = useQuery<OverviewData>({
     queryKey: ["/api/dashboard/overview"]

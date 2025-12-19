@@ -8,10 +8,13 @@ import {
 } from "@/components/dashboard/loading-skeleton";
 import { Upload } from "lucide-react";
 import { useLocation } from "wouter";
+import { usePageTracking, useAnalytics } from "@/hooks/use-analytics";
 import type { SellersData } from "@shared/schema";
 
 export default function Sellers() {
   const [, setLocation] = useLocation();
+  const analytics = useAnalytics();
+  usePageTracking("Vendedores", "/vendedores");
 
   const { data, isLoading, error } = useQuery<SellersData>({
     queryKey: ["/api/dashboard/sellers"]

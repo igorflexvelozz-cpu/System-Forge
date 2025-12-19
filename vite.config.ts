@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import http from 'http';
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
@@ -57,10 +58,22 @@ export default defineConfig({
         '/api': {
           target: backend,
           changeOrigin: true,
-          timeout: 600000, // 10 minutes
-          proxyTimeout: 600000,
+          // No timeout limit
+          timeout: 0,
+          // No proxy timeout limit
+          proxyTimeout: 0,
           followRedirects: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
+          // Increase payload limit to 50MB
+          limit: '200mb',
+          // Keep alive settings
+          agent: new http.Agent({ keepAlive: true }),
+          // Increase connection pool size
+          maxSockets: 100,
+          // Increase request timeout to 1 hour
+          proxyReq: (proxyReq: http.ClientRequest) => {
+            proxyReq.setTimeout(3600000);
+          }
         },
       };
     })(),

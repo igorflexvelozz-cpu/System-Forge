@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { ChartSkeleton, TableSkeleton } from "@/components/dashboard/loading-skeleton";
 import { Upload } from "lucide-react";
 import { useLocation } from "wouter";
+import { usePageTracking } from "@/hooks/use-analytics";
 import type { ZonesData, ZoneMetrics, CepMetrics } from "@shared/schema";
 
 type ZoneCepTableRow = {
@@ -17,6 +18,7 @@ type ZoneCepTableRow = {
 
 export default function Zones() {
   const [, setLocation] = useLocation();
+  usePageTracking("Zonas", "/zonas");
 
   const { data, isLoading, error } = useQuery<ZonesData>({
     queryKey: ["/api/dashboard/zones"]

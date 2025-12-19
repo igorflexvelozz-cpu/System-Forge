@@ -5,10 +5,12 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { ChartSkeleton } from "@/components/dashboard/loading-skeleton";
 import { Trophy, AlertTriangle, Package, Upload } from "lucide-react";
 import { useLocation } from "wouter";
+import { usePageTracking } from "@/hooks/use-analytics";
 import type { RankingsData } from "@shared/schema";
 
 export default function Rankings() {
   const [, setLocation] = useLocation();
+  usePageTracking("Rankings", "/rankings");
 
   const { data, isLoading, error } = useQuery<RankingsData>({
     queryKey: ["/api/dashboard/rankings"]

@@ -15,9 +15,14 @@ upload_repo = UploadRepository()
 # seja exatamente "/upload" (sem redirect 307).
 @router.post("", response_model=UploadResponse)
 async def upload_file(file: UploadFile = File(...), fileType: str = Form(...)):
-    # Check file size (100MB limit)
-    if file.size and file.size > 100 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
+    # Check file size (200MB limit)
+    MAX_FILE_SIZE = 200 * 1024 * 1024  # 200MB
+    if file.size and file.size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail=f"File too large. Maximum size is {MAX_FILE_SIZE / (1024 * 1024)}MB.")
+    
+    # Check if file exists and has content
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file selected")
     
     if fileType == "logmanager":
         return await upload_mother_logic(file)
@@ -38,9 +43,14 @@ async def upload_loose(file: UploadFile = File(...)):
 
 async def upload_mother_logic(file: UploadFile):
     try:
-        # Check file size (100MB limit)
-        if file.size and file.size > 100 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
+        # Check file size (200MB limit)
+        MAX_FILE_SIZE = 200 * 1024 * 1024  # 200MB
+        if file.size and file.size > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail=f"File too large. Maximum size is {MAX_FILE_SIZE / (1024 * 1024)}MB.")
+        
+        # Check if file exists and has content
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No file selected")
         
         if not file.filename or not file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
             raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
@@ -83,9 +93,14 @@ async def upload_mother_logic(file: UploadFile):
 
 async def upload_loose_logic(file: UploadFile):
     try:
-        # Check file size (100MB limit)
-        if file.size and file.size > 100 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB.")
+        # Check file size (200MB limit)
+        MAX_FILE_SIZE = 200 * 1024 * 1024  # 200MB
+        if file.size and file.size > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail=f"File too large. Maximum size is {MAX_FILE_SIZE / (1024 * 1024)}MB.")
+        
+        # Check if file exists and has content
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No file selected")
         
         if not file.filename or not file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
             raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")

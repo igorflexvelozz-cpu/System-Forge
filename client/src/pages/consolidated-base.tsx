@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, Download } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTracking, useAnalytics } from "@/hooks/use-analytics";
 import type { ConsolidatedData, PackageRecord } from "@shared/schema";
 
 export default function ConsolidatedBase() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const analytics = useAnalytics();
+  usePageTracking("Base Consolidada", "/base-consolidada");
 
   const { data, isLoading, error } = useQuery<ConsolidatedData>({
     queryKey: ["/api/dashboard/consolidated"]
@@ -77,6 +80,12 @@ export default function ConsolidatedBase() {
 
   const handleExport = async () => {
     try {
+      analytics.trackEvent("export_started", {
+        export_type: "consolidated",
+        format: "csv",
+        record_count: data?.total || 0
+      });
+
       const response = await fetch("/api/export/consolidated");
       if (!response.ok) throw new Error("Erro ao exportar");
       
@@ -90,11 +99,23 @@ export default function ConsolidatedBase() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
+      analytics.trackEvent("export_completed", {
+        export_type: "consolidated",
+        format: "csv",
+        file_size: blob.size
+      });
+
       toast({
         title: "Exportação concluída",
         description: "O arquivo foi baixado com sucesso."
       });
     } catch (err) {
+      analytics.trackEvent("export_failed", {
+        export_type: "consolidated",
+        format: "csv",
+        error: err instanceof Error ? err.message : "Unknown error"
+      });
+
       toast({
         variant: "destructive",
         title: "Erro na exportação",

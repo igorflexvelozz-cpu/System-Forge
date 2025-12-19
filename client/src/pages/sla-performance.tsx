@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart } from "@/components/dashboard/line-chart";
 import { FilterBar } from "@/components/dashboard/filter-bar";
@@ -8,6 +8,7 @@ import { ChartSkeleton, TableSkeleton } from "@/components/dashboard/loading-ske
 import { Badge } from "@/components/ui/badge";
 import { Upload } from "lucide-react";
 import { useLocation } from "wouter";
+import { usePageTracking, useAnalytics } from "@/hooks/use-analytics";
 import type { SlaPerformanceData, PackageRecord, FilterOptions } from "@shared/schema";
 
 interface FilterValues {
@@ -20,7 +21,19 @@ interface FilterValues {
 
 export default function SlaPerformance() {
   const [, setLocation] = useLocation();
+  const analytics = useAnalytics();
+  usePageTracking("SLA Performance", "/sla-performance");
   const [filters, setFilters] = useState<FilterValues>({});
+
+  // Track filter changes
+  useEffect(() => {
+    if (Object.keys(filters).length > 0) {
+      analytics.trackDashboardInteraction("filter_applied", "sla_performance", {
+        filters: Object.keys(filters),
+        has_date_range: !!(filters.startDate || filters.endDate)
+      });
+    }
+  }, [filters, analytics]);
 
   const { data: filterOptions } = useQuery<FilterOptions>({
     queryKey: ["/api/filters"]
